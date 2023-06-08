@@ -26,12 +26,18 @@
 
 -(instancetype)init{
     self = [super init];
-    self.centralManager=[[CBCentralManager alloc]initWithDelegate:self queue:nil];
     self.devicesMap=[NSMutableDictionary new];
     self.scanDeviceCaches=[NSMutableDictionary new];
     self.hideConnectedDeviceCaches=[NSMutableDictionary new];
     self.isFixScan=NO;
     return self;
+}
+
+- (CBCentralManager *)centralManager {
+	if (_centralManager == nil) {
+		_centralManager = [[CBCentralManager alloc]initWithDelegate:self queue:nil];
+	}
+	return _centralManager;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
