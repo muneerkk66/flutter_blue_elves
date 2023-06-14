@@ -24,6 +24,13 @@
     [eventChannel setStreamHandler:instance];
 }
 
+- (CBCentralManager *)centralManager {
+	if (_centralManager == nil) {
+		_centralManager = [[CBCentralManager alloc]initWithDelegate:self queue:nil];
+	}
+	return _centralManager;
+}
+
 -(instancetype)init{
     self = [super init];
     self.devicesMap=[NSMutableDictionary new];
@@ -33,28 +40,27 @@
     return self;
 }
 
-- (CBCentralManager *)centralManager {
-	if (_centralManager == nil) {
-		_centralManager = [[CBCentralManager alloc]initWithDelegate:self queue:nil];
-	}
-	return _centralManager;
-}
-
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-    if ([@"checkBluetoothState" isEqualToString:call.method]) {//如果是获取蓝牙状态
-        if(self.centralManager.state==CBManagerStateUnknown)
-            result([NSNumber numberWithInt:0]);
-        else if(self.centralManager.state==CBManagerStateResetting)
-            result([NSNumber numberWithInt:1]);
-        else if(self.centralManager.state==CBManagerStateUnsupported)
-            result([NSNumber numberWithInt:2]);
-        else if(self.centralManager.state==CBManagerStateUnauthorized)
-            result([NSNumber numberWithInt:3]);
-        else if(self.centralManager.state==CBManagerStatePoweredOff)
-            result([NSNumber numberWithInt:4]);
-        else if(self.centralManager.state==CBManagerStatePoweredOn)
-            result([NSNumber numberWithInt:5]);
-    } else if([@"startScan" isEqualToString:call.method]){//如果是扫描设备
+	//fix for Incorrect Bluetooth adapter state for CBCentralManager using lazy property
+	int delay = self.centralManager.state == CBManagerStateUnknown ? 1 : 0;
+	if ([@"checkBluetoothState" isEqualToString:call.method]) {
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, delay * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+			if(self.centralManager.state==CBManagerStateUnknown)
+				result([NSNumber numberWithInt:0]);
+			else if(self.centralManager.state==CBManagerStateResetting)
+				result([NSNumber numberWithInt:1]);
+			else if(self.centralManager.state==CBManagerStateUnsupported)
+				result([NSNumber numberWithInt:2]);
+			else if(self.centralManager.state==CBManagerStateUnauthorized)
+				result([NSNumber numberWithInt:3]);
+			else if(self.centralManager.state==CBManagerStatePoweredOff)
+				result([NSNumber numberWithInt:4]);
+			else if(self.centralManager.state==CBManagerStatePoweredOn)
+				result([NSNumber numberWithInt:5]);
+		});
+
+
+	}else if([@"startScan" isEqualToString:call.method]){//如果是扫描设备
         NSDictionary<NSString *,id> * dataMap=call.arguments;
         [self scanDevice:[dataMap objectForKey:@"isAllowDuplicates"] timeout:[[dataMap objectForKey:@"timeout"] intValue] isFix:NO];
         result(nil);
